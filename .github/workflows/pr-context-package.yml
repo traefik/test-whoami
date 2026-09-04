@@ -1,0 +1,72 @@
+name: PR Context Package (untrusted, no secrets)
+
+# Companion to .github/workflows/ai-review-2job.md.
+#
+# This job runs unprivileged: plain `pull_request`, contents:read only, no
+# secrets, no OIDC. It is safe to check out a fork's PR head here because
+# there is nothing sensitive available to leak and nothing here writes back
+# to the PR. It packages the full source tree (not just the diff) plus PR
+# metadata into an artifact.
+#
+# ai-review-2job.md (workflow_run, trusted, base-repo context) downloads that
+# artifact and gives the review agent a real local checkout to explore with
+# the bash tool, instead of reading files one at a time through the GitHub
+# API — the tradeoff being compared against ai-review.md's pull_request_target
+# + checkout:false + read-only GitHub MCP approach.
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-context-package-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    if: github.event.label.name == 'ai/review-2job'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check labeler permission
+        id: perm
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.actor,
+            });
+            const allowed = ["admin", "maintain", "write"].includes(data.permission);
+            if (!allowed) {
+              core.setFailed(`${context.actor} (permission: ${data.permission}) is not authorized to trigger this workflow`);
+            }
+
+      - name: Checkout PR head (untrusted — read-only token, no secrets exposed)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch base ref for diff
+        run: git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+
+      - name: Package PR context (source tree + diff + metadata)
+        run: |
+          mkdir -p /tmp/pr-context
+          printf '%s' "${{ github.event.pull_request.number }}" > /tmp/pr-context/pr_number.txt
+          printf '%s' "${{ github.event.pull_request.head.sha }}" > /tmp/pr-context/head_sha.txt
+          printf '%s' "${{ github.event.pull_request.base.sha }}" > /tmp/pr-context/base_sha.txt
+          git diff "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" > /tmp/pr-context/pr.diff
+          tar -czf /tmp/pr-context/source.tar.gz --exclude=.git .
+
+      - name: Upload PR context artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-context-${{ github.event.pull_request.number }}
+          path: /tmp/pr-context
+          retention-days: 1
