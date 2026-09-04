@@ -1,0 +1,64 @@
+version: 2
+
+project_name: whoami
+
+builds:
+  - binary: whoami
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - '7'
+    ignore:
+      - goos: windows
+        goarch: arm
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^doc:'
+      - '^chore:'
+      - '^chore(deps):'
+      - '^test:'
+      - '^tests:'
+
+archives:
+  - id: whoami
+    name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm}}v{{ .Arm }}{{ end }}'
+    formats: [ 'tar.gz' ]
+    format_overrides:
+      - goos: windows
+        formats: [ 'zip' ]
+    files:
+      - LICENSE
+
+dockers_v2:
+  - dockerfile: buildx.Dockerfile
+    images:
+      - 'traefik/whoami'
+      - 'ghcr.io/traefik/whoami'
+    tags:
+      - '{{ .Tag }}'
+      - 'v{{ .Major }}.{{ .Minor }}'
+      - 'latest'
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/arm/v7
+    # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+    labels:
+      'org.opencontainers.image.title': '{{ .ProjectName }}'
+      'org.opencontainers.image.description': 'Tiny Go webserver that prints OS information and HTTP request to output'
+      'org.opencontainers.image.source': '{{ .GitURL }}'
+      'org.opencontainers.image.url': '{{ .GitURL }}'
+      'org.opencontainers.image.documentation': '{{ .GitURL }}'
+      'org.opencontainers.image.created': '{{ .Date }}'
+      'org.opencontainers.image.revision': '{{ .FullCommit }}'
+      'org.opencontainers.image.version': '{{ .Version }}'
