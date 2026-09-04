@@ -32,14 +32,28 @@ on:
 
 permissions:
     contents: read
+    id-token: write   # never actually usable here (fork PR, no OIDC) — see engine: below
 
 # Full history so `git diff <base_sha> <head_sha>` below has both commits
 # locally — the default pull_request checkout is otherwise fetch-depth: 1.
 checkout:
     fetch-depth: 0
 
+# gh-aw validates the engine's credentials in the activation job unconditionally,
+# before the agent job (and its noop skip) even starts — so a bare `engine: id:
+# claude` fails here expecting a static ANTHROPIC_API_KEY secret. Declaring the
+# same github-oidc auth as ai-review.md/ai-review-2job.md satisfies that check.
+# It's never actually exercised: this trigger is a fork PR, which never gets an
+# OIDC token anyway, but the noop step always fires before the engine starts.
 engine:
     id: claude
+    auth:
+        type: github-oidc
+        provider: anthropic
+        federation-rule-id: fdrl_013Yw3g9LVvJzRJgQoP5zFnR
+        organization-id: 797e3cc2-9e62-4091-a6e2-9bd04249babc
+        service-account-id: svac_015rSKKoTmnBF2WbzqpemYW5
+        workspace-id: wrkspc_01EZUP6bV8tj87UdRfaC3zKR
 
 steps:
     -   name: Package PR context (source tree + diff + metadata)
