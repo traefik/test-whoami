@@ -136,7 +136,7 @@ func setupMutualTLS(ca string) *tls.Config {
 		ClientAuth:               tls.RequireAndVerifyClientCert,
 		ClientCAs:                clientCertPool,
 		PreferServerCipherSuites: true,
-		MinVersion:               tls.VersionTLS12,
+		MinVersion:               tls.VersionTLS11,
 	}
 
 	return tlsConfig
