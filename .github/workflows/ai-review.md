@@ -2,15 +2,33 @@
 # .github/workflows/ai-review.md
 # Compile with:  gh aw compile --strict --actionlint --zizmor --poutine
 #
-# One-shot label command: applying `ai/review` to a PR fires the review and
-# the label is removed again so it can be re-applied for a re-review.
+# pull_request_target (not label_command/pull_request): PRs from forks get no
+# GITHUB_TOKEN write access and no OIDC id-token under a plain `pull_request`
+# trigger, so the Anthropic OIDC auth step 403s. pull_request_target runs in
+# the base repo's context instead, so secrets/OIDC are available regardless of
+# where the PR head lives.
+#
+# checkout: false below is required (gh-aw's strict mode refuses to compile a
+# pull_request_target trigger with checkout enabled — a fork PR could
+# otherwise inject code that runs with base-repo secrets, aka a "pwn request").
+# The agent only ever reads the diff through the read-only GitHub MCP tools,
+# so it never needs a local clone of the fork's commit.
+#
+# Applying the `ai/review` label still fires the review; the label is NOT
+# auto-removed here (label_command's one-shot removal isn't available outside
+# pull_request/issues/discussion), so re-review means removing+reapplying it.
 on:
-    label_command:
-        name: ai/review
-        events: [ pull_request ]          # never fire from issues/discussions
-    roles: [ admin, maintainer, write ] # exact-match allowlist of who may trigger
+    pull_request_target:
+        types: [ labeled ]
+    roles: [ admin, maintainer, write ] # exact-match allowlist of who may apply the label
     reaction: eyes
     status-comment: false             # one less write to the PR timeline
+
+# pull_request_target has no built-in label-name filter (unlike pull_request /
+# label_command), so gate on the exact label manually.
+if: github.event.label.name == 'ai/review'
+
+checkout: false
 
 # Agent job is read-only. All writes happen in separate safe-output jobs.
 permissions:
