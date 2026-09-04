@@ -74,6 +74,11 @@ steps:
             retention-days: 1
 
     -   name: Skip the AI agent — this workflow only packages data for ai-review-2job.md
+        # GH_AW_SAFE_OUTPUTS is a step OUTPUT of the compiler's own
+        # set-runtime-paths step, not a job-wide env var — every step that
+        # writes to it (including custom steps:) must reference it explicitly.
+        env:
+            GH_AW_SAFE_OUTPUTS: ${{ steps.set-runtime-paths.outputs.GH_AW_SAFE_OUTPUTS }}
         run: |
             msg="Packaged PR #${{ github.event.pull_request.number }} context (source tree + diff) for the workflow_run consumer; no AI review runs in this workflow."
             printf '{"type":"noop","message":"%s"}\n' "$msg" >> "$GH_AW_SAFE_OUTPUTS"
