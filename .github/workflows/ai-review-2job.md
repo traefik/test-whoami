@@ -28,7 +28,13 @@ on:
     workflow_run:
         workflows: [ "PR Context Package (untrusted, no secrets)" ]
         types: [ completed ]
-        branches: [ main ]
+        # NOT the base branch: workflow_run's branches: filters on the branch
+        # the *triggering* run itself executed on, which for a pull_request-
+        # triggered run is the PR's own head branch (e.g. the fork's branch
+        # name) — never "main" here. Match any branch; the security boundary
+        # is the repository-id + not-fork check gh-aw injects below, not the
+        # branch name.
+        branches: [ "**" ]
         conclusion: success
 
 # Agent job is read-only. All writes happen in separate safe-output jobs.
