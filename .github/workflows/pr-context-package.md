@@ -20,6 +20,12 @@ on:
     pull_request:
         types: [ labeled ]
         names: [ ai/review-2job ]         # native label filter, not a hand-rolled check
+        # gh-aw blocks pull_request triggers from forks by default (repository
+        # ID check). This workflow is safe to allow broadly: it has no secrets
+        # and the roles: check below still gates on who applied the label, not
+        # on where the PR head lives — but scope it to the known test fork
+        # rather than "*" since this is only a comparison exercise.
+        forks: [ "mmatur/*" ]
     roles: [ admin, maintainer, write ] # native allowlist for who may apply the label
     reaction: eyes
     status-comment: false
