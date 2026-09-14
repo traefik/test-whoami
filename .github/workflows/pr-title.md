@@ -11,6 +11,10 @@ on:
   steps:
     - name: Check who set the current title
       id: title_owner
+      # Only worth computing when the triggering label is the one we react to;
+      # the activation job is gated on the label anyway, so skipping here just
+      # avoids the API calls.
+      if: github.event.label.name == 'status/2-needs-review'
       env:
         GH_TOKEN: ${{ github.token }}
         REPO: ${{ github.repository }}
@@ -104,7 +108,7 @@ max-turns: 100
 imports:
 - shared/pr-title.md
 
-source: juliens/ai/workflows/traefik.pr-title.md@0be0a204f78b7a88f4c360f069279d1ed908bb3a
+source: juliens/ai/workflows/traefik.pr-title.md@5cfe03f5a5cfae996f4f36d72918786cf8c2b1b9
 ---
 
 Nothing
