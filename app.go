@@ -49,6 +49,7 @@ var (
 	ca      string
 	port    string
 	name    string
+	path    string
 	verbose bool
 )
 
@@ -59,6 +60,7 @@ func init() {
 	flag.StringVar(&ca, "cacert", "", "give me a CA chain, enforces mutual TLS")
 	flag.StringVar(&port, "port", getEnv("WHOAMI_PORT_NUMBER", "80"), "give me a port number")
 	flag.StringVar(&name, "name", os.Getenv("WHOAMI_NAME"), "give me a name")
+	flag.StringVar(&name, "path", os.Getenv("WHOAMI_PATH"), "give me a path")
 }
 
 // Data whoami information.
@@ -93,7 +95,7 @@ func main() {
 	h := handle(mux.ServeHTTP, verbose)
 
 	if cert == "" || key == "" {
-		log.Printf("Starting up on port %s", port)
+		log.Printf("Starting up on port %s and path %s", port, path)
 
 		var protocols http.Protocols
 		protocols.SetHTTP1(true)
