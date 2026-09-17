@@ -26,6 +26,6 @@ jobs:
             --repo traefik/ai-test \
             --ref main \
             --field source_repo="${SOURCE_REPO}" \
-            --field pr_number="${PR_NUMBER}"
-            --field event_name=${{ github.event_name }}
+            --field pr_number="${PR_NUMBER}" \
+            --field event_name=${{ github.event_name }} \
             --field action=${{ github.event.action }}
